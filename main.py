@@ -5,7 +5,7 @@ from threading import Thread
 from flask import Flask
 import asyncio
 
-# --- 1. DEO: Flask Web Server ---
+# --- 1. DEO: Ispravan Flask Web Server za Render ---
 app = Flask('')
 
 @app.route('/')
@@ -13,13 +13,15 @@ def home():
     return "Staff prijava bot je ziv!"
 
 def run():
-    app.run(host='0.0.0.0', port=8080)
+    # Render automatski dodeljuje PORT, ako ga nema koristi se 10000
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host='0.0.0.0', port=port)
 
 def keep_alive():
     t = Thread(target=run)
     t.start()
 
-# --- 2. DEO: Dugme za brisanje kanala ---
+# --- OSTATAK KODA ZA TICKET BOTA OSTAJE ISTI ---
 class CloseTicketView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
@@ -33,9 +35,7 @@ class CloseTicketView(discord.ui.View):
         except Exception as e:
             print(f"Greska pri brisanju kanala: {e}")
 
-# --- 3. DEO: Formular (Modal) ---
 class StaffApplicationModal(discord.ui.Modal, title="Prijava za Staff Tim"):
-    
     pitanje1 = discord.ui.TextInput(label="1. Lični podaci", style=discord.TextStyle.short, required=True)
     pitanje2 = discord.ui.TextInput(label="2. Prethodno iskustvo", style=discord.TextStyle.long, required=True)
     pitanje3 = discord.ui.TextInput(label="3. Dnevna aktivnost", style=discord.TextStyle.short, required=True)
@@ -44,20 +44,15 @@ class StaffApplicationModal(discord.ui.Modal, title="Prijava za Staff Tim"):
     async def on_submit(self, interaction: discord.Interaction):
         guild = interaction.guild
         user = interaction.user
-        
         clean_name = f"prijava-{user.name.lower()}".replace(" ", "-")
         existing_channel = discord.utils.get(guild.channels, name=clean_name)
         if existing_channel:
             await interaction.response.send_message(f"Već imaš aktivnu prijavu ovde: {existing_channel.mention}", ephemeral=True)
             return
-
         await interaction.response.send_message("Kreiram tvoju prijavu, sačekaj trenutak...", ephemeral=True)
-
         current_category = interaction.channel.category
         ticket_channel = await guild.create_text_channel(name=clean_name, category=current_category)
-        
         await ticket_channel.set_permissions(user, read_messages=True, send_messages=True, read_message_history=True)
-
         embed = discord.Embed(
             title=f"📝 Nova Prijava za Staffa — {user.name}",
             description=f"Korisnik {user.mention} je uspešno poslao prijavu.",
@@ -67,25 +62,20 @@ class StaffApplicationModal(discord.ui.Modal, title="Prijava za Staff Tim"):
         embed.add_field(name="🛠️ 2. Prethodno iskustvo:", value=self.pitanje2.value, inline=False)
         embed.add_field(name="⏰ 3. Dnevna aktivnost:", value=self.pitanje3.value, inline=False)
         embed.add_field(name="❓ 4. Zašto baš on:", value=self.pitanje4.value, inline=False)
-        
         await ticket_channel.send(embed=embed, view=CloseTicketView())
 
-# --- 4. DEO: Panel sa zelenim dugmetom ---
 class TicketButton(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
-
     @discord.ui.button(label="📝 Otvori Konkurs", style=discord.ButtonStyle.green, custom_id="open_ticket_btn")
     async def open_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_modal(StaffApplicationModal())
 
-# --- 5. DEO: Konfiguracija (PROMENJEN PREFIKS NA ti!) ---
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 intents.guilds = True
 
-# Sada sluša samo komande koje počinju sa ti!
 bot = commands.Bot(command_prefix="ti!", intents=intents)
 
 @bot.event
@@ -104,7 +94,6 @@ async def setup(ctx):
     )
     await ctx.send(embed=embed, view=TicketButton())
 
-# Ignorišemo greške ako neko slučajno ukuca pogrešnu komandu
 @bot.event
 async def on_command_error(ctx, error):
     if isinstance(error, commands.CommandNotFound):
