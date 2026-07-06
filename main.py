@@ -31,28 +31,26 @@ class StaffApplicationModal(discord.ui.Modal, title="Prijava za Staff Tim"):
         guild = interaction.guild
         user = interaction.user
         
-        existing_channel = discord.utils.get(guild.channels, name=f"prijava-{user.name.lower()}")
+        # Provera duplih kanala po imenu
+        clean_name = f"prijava-{user.name.lower()}".replace(" ", "-")
+        existing_channel = discord.utils.get(guild.channels, name=clean_name)
         if existing_channel:
             await interaction.response.send_message(f"Već imaš aktivnu prijavu ovde: {existing_channel.mention}", ephemeral=True)
             return
 
-        # Odmah odgovaramo Discordu da sprečimo "Interaction failed"
+        # Odmah odgovaramo da Discord ne baci grešku
         await interaction.response.send_message("Kreiram tvoju prijavu, sačekaj trenutak...", ephemeral=True)
 
-        # ČISTE DOZVOLE: Sakrij od @everyone, otključaj za bota i igrača
-        overwrites = {
-            guild.default_role: discord.PermissionOverwrite(read_messages=False),
-            user: discord.PermissionOverwrite(read_messages=True, send_messages=True, embed_links=True, read_message_history=True),
-            guild.me: discord.PermissionOverwrite(read_messages=True, send_messages=True, embed_links=True, read_message_history=True)
-        }
-
-        # Kreiranje kanala
-        ticket_channel = await guild.create_text_channel(name=f"prijava-{user.name}", overwrites=overwrites)
+        # Čisto kreiranje kanala bez ikakvih teških dozvola koje blokiraju Discord
+        ticket_channel = await guild.create_text_channel(name=clean_name)
         
-        # Generisanje uokvirene poruke sa odgovorima
+        # Odmah dodajemo pravo igraču da vidi SVOJ kanal i da piše
+        await ticket_channel.set_permissions(user, read_messages=True, send_messages=True, read_message_history=True)
+
+        # Generisanje poruke sa odgovorima
         embed = discord.Embed(
             title=f"📝 Nova Prijava za Staffa — {user.name}",
-            description=f"Korisnik {user.mention} je popunio konkurs.",
+            description=f"Korisnik {user.mention} je uspešno poslao prijavu.",
             color=discord.Color.blue()
         )
         embed.add_field(name="👤 1. Lični podaci:", value=self.pitanje1.value, inline=False)
@@ -71,7 +69,7 @@ class StaffApplicationModal(discord.ui.Modal, title="Prijava za Staff Tim"):
         close_button.callback = close_callback
         close_view.add_item(close_button)
 
-        # Šaljemo poruku DIREKTNO u novokreirani kanal
+        # Šaljemo sve odgovore u kanal
         await ticket_channel.send(embed=embed, view=close_view)
 
 # --- 3. DEO: Panel dugme ---
