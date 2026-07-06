@@ -53,14 +53,11 @@ class StaffApplicationModal(discord.ui.Modal, title="Prijava za Staff Tim"):
 
         await interaction.response.send_message("Kreiram tvoju prijavu, sačekaj trenutak...", ephemeral=True)
 
-        # Pravljenje kanala u trenutnoj kategoriji da nasledi privatnost
         current_category = interaction.channel.category
         ticket_channel = await guild.create_text_channel(name=clean_name, category=current_category)
         
-        # Dozvole samo za tog igrača
         await ticket_channel.set_permissions(user, read_messages=True, send_messages=True, read_message_history=True)
 
-        # Slanje odgovora u kanal
         embed = discord.Embed(
             title=f"📝 Nova Prijava za Staffa — {user.name}",
             description=f"Korisnik {user.mention} je uspešno poslao prijavu.",
@@ -82,19 +79,20 @@ class TicketButton(discord.ui.View):
     async def open_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_modal(StaffApplicationModal())
 
-# --- 5. DEO: Konfiguracija ---
+# --- 5. DEO: Konfiguracija (PROMENJEN PREFIKS NA ti!) ---
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 intents.guilds = True
 
-bot = commands.Bot(command_prefix="t!", intents=intents)
+# Sada sluša samo komande koje počinju sa ti!
+bot = commands.Bot(command_prefix="ti!", intents=intents)
 
 @bot.event
 async def on_ready():
     bot.add_view(TicketButton())
     bot.add_view(CloseTicketView())
-    print(f'Bot spreman!')
+    print(f'Ticket bot spreman!')
 
 @bot.command()
 @commands.has_permissions(administrator=True)
@@ -105,6 +103,13 @@ async def setup(ctx):
         color=discord.Color.purple()
     )
     await ctx.send(embed=embed, view=TicketButton())
+
+# Ignorišemo greške ako neko slučajno ukuca pogrešnu komandu
+@bot.event
+async def on_command_error(ctx, error):
+    if isinstance(error, commands.CommandNotFound):
+        return
+    raise error
 
 keep_alive()
 token = os.environ.get("DISCORD_TOKEN")
