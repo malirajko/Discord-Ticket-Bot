@@ -7,11 +7,10 @@ import asyncio
 
 # --- 1. DEO: Ispravan Flask Web Server za Render ---
 app = Flask('')
-
 @app.route('/')
 def home():
     return "Staff prijava bot je ziv!"
-
+    
 def run():
     # Render automatski dodeljuje PORT, ako ga nema koristi se 10000
     port = int(os.environ.get("PORT", 10000))
