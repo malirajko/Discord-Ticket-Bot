@@ -19,11 +19,7 @@ def keep_alive():
     t = Thread(target=run)
     t.start()
 
-# --- BOJA ---
-# Jedinstvena prelepa zelena boja (Mint / SAMP zelena)
-ZELENA_BOJA = discord.Color.from_str("#00A86B")
-
-# --- 2. DEO: Dugme za brisanje kanala ---
+# --- 2. DEO: Dugme za brisanje ---
 class CloseTicketView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
@@ -55,28 +51,35 @@ class StaffApplicationModal(discord.ui.Modal, title="Prijava za Staff Tim"):
             await interaction.response.send_message(f"Već imaš aktivnu prijavu ovde: {existing_channel.mention}", ephemeral=True)
             return
 
-        # Odmah kreiramo kanal pre nego što odgovorimo interakciji
-        ticket_channel = await guild.create_text_channel(name=clean_name)
-        
-        # Postavljamo osnovne dozvole za igrača da vidi kanal
-        await ticket_channel.set_permissions(user, read_messages=True, send_messages=True, read_message_history=True)
+        await interaction.response.send_message("Kreiram tvoju prijavu, sačekaj trenutak...", ephemeral=True)
 
-        # GENERIŠEMO ODGOVORE SA ZELENOM BOJOM
+        # STROGE DOZVOLE: Sakrivamo od običnih članova odmah pri kreiranju
+        overwrites = {
+            guild.default_role: discord.PermissionOverwrite(read_messages=False), # SVI ČLANOVI NE VIDE KANAL
+            user: discord.PermissionOverwrite(read_messages=True, send_messages=True, read_message_history=True), # IGRAČ VIDI I PIŠE
+            guild.me: discord.PermissionOverwrite(read_messages=True, send_messages=True, read_message_history=True) # BOT VIDI I PIŠE
+        }
+
+        # Ako na serveru imaš ulogu Administrator ili neku specifičnu Staff ulogu, dodajemo je automatski
+        admin_role = discord.utils.get(guild.roles, name="Administrator")
+        if admin_role:
+            overwrites[admin_role] = discord.PermissionOverwrite(read_messages=True, send_messages=True, read_message_history=True)
+
+        # Kreiranje kanala sa unesenim bezbednosnim dozvolama
+        ticket_channel = await guild.create_text_channel(name=clean_name, overwrites=overwrites)
+
+        # Generisanje poruke sa odgovorima
         embed = discord.Embed(
             title=f"📝 Nova Prijava za Staffa — {user.name}",
             description=f"Korisnik {user.mention} je uspešno poslao prijavu.",
-            color=ZELENA_BOJA
+            color=discord.Color.blue()
         )
         embed.add_field(name="👤 1. Lični podaci:", value=self.pitanje1.value, inline=False)
         embed.add_field(name="🛠️ 2. Prethodno iskustvo:", value=self.pitanje2.value, inline=False)
         embed.add_field(name="⏰ 3. Dnevna aktivnost:", value=self.pitanje3.value, inline=False)
         embed.add_field(name="❓ 4. Zašto baš on:", value=self.pitanje4.value, inline=False)
         
-        # Šaljemo embed poruku u tek kreirani kanal
         await ticket_channel.send(embed=embed, view=CloseTicketView())
-
-        # FIX ZA ZABODENU PORUKU: Sada interakciji šaljemo link do kanala kao zvaničan završetak rada!
-        await interaction.response.send_message(f"✅ Tvoja prijava je kreirana uspešno ovde: {ticket_channel.mention}", ephemeral=True)
 
 # --- 4. DEO: Panel dugme ---
 class TicketButton(discord.ui.View):
@@ -99,7 +102,7 @@ bot = commands.Bot(command_prefix="t!", intents=intents)
 async def on_ready():
     bot.add_view(TicketButton())
     bot.add_view(CloseTicketView())
-    print(f'Bot je spreman i stabilan!')
+    print(f'Bot je spreman i registrovan!')
 
 @bot.command()
 @commands.has_permissions(administrator=True)
@@ -107,7 +110,7 @@ async def setup(ctx):
     embed = discord.Embed(
         title="📋 Konkurs za Staff Tim",
         description="Ukoliko želiš da postaneš deo našeg Staff tima, klikni na dugme ispod i odgovori na pitanja u formularu.",
-        color=ZELENA_BOJA
+        color=discord.Color.purple()
     )
     await ctx.send(embed=embed, view=TicketButton())
 
