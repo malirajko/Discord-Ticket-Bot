@@ -5,7 +5,6 @@ from threading import Thread
 from flask import Flask
 import asyncio
 
-# --- 1. DEO: Flask Web Server ---
 app = Flask('')
 
 @app.route('/')
@@ -19,7 +18,6 @@ def keep_alive():
     t = Thread(target=run)
     t.start()
 
-# --- 2. DEO: Dugme za brisanje ---
 class CloseTicketView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
@@ -33,7 +31,6 @@ class CloseTicketView(discord.ui.View):
         except Exception as e:
             print(f"Greska pri brisanju kanala: {e}")
 
-# --- 3. DEO: Formular (Modal) ---
 class StaffApplicationModal(discord.ui.Modal, title="Prijava za Staff Tim"):
     
     pitanje1 = discord.ui.TextInput(label="1. Lični podaci", style=discord.TextStyle.short, required=True)
@@ -53,22 +50,11 @@ class StaffApplicationModal(discord.ui.Modal, title="Prijava za Staff Tim"):
 
         await interaction.response.send_message("Kreiram tvoju prijavu, sačekaj trenutak...", ephemeral=True)
 
-        # STROGE DOZVOLE: Sakrivamo od običnih članova odmah pri kreiranju
-        overwrites = {
-            guild.default_role: discord.PermissionOverwrite(read_messages=False), # SVI ČLANOVI NE VIDE KANAL
-            user: discord.PermissionOverwrite(read_messages=True, send_messages=True, read_message_history=True), # IGRAČ VIDI I PIŠE
-            guild.me: discord.PermissionOverwrite(read_messages=True, send_messages=True, read_message_history=True) # BOT VIDI I PIŠE
-        }
+        current_category = interaction.channel.category
+        ticket_channel = await guild.create_text_channel(name=clean_name, category=current_category)
+        
+        await ticket_channel.set_permissions(user, read_messages=True, send_messages=True, read_message_history=True)
 
-        # Ako na serveru imaš ulogu Administrator ili neku specifičnu Staff ulogu, dodajemo je automatski
-        admin_role = discord.utils.get(guild.roles, name="Administrator")
-        if admin_role:
-            overwrites[admin_role] = discord.PermissionOverwrite(read_messages=True, send_messages=True, read_message_history=True)
-
-        # Kreiranje kanala sa unesenim bezbednosnim dozvolama
-        ticket_channel = await guild.create_text_channel(name=clean_name, overwrites=overwrites)
-
-        # Generisanje poruke sa odgovorima
         embed = discord.Embed(
             title=f"📝 Nova Prijava za Staffa — {user.name}",
             description=f"Korisnik {user.mention} je uspešno poslao prijavu.",
@@ -81,7 +67,6 @@ class StaffApplicationModal(discord.ui.Modal, title="Prijava za Staff Tim"):
         
         await ticket_channel.send(embed=embed, view=CloseTicketView())
 
-# --- 4. DEO: Panel dugme ---
 class TicketButton(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
@@ -90,7 +75,6 @@ class TicketButton(discord.ui.View):
     async def open_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_modal(StaffApplicationModal())
 
-# --- 5. DEO: Konfiguracija bota ---
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
@@ -102,7 +86,7 @@ bot = commands.Bot(command_prefix="t!", intents=intents)
 async def on_ready():
     bot.add_view(TicketButton())
     bot.add_view(CloseTicketView())
-    print(f'Bot je spreman i registrovan!')
+    print(f'Bot spreman!')
 
 @bot.command()
 @commands.has_permissions(administrator=True)
@@ -114,7 +98,6 @@ async def setup(ctx):
     )
     await ctx.send(embed=embed, view=TicketButton())
 
-# --- 6. DEO: Pokretanje ---
 keep_alive()
 token = os.environ.get("DISCORD_TOKEN")
 bot.run(token)
