@@ -5,6 +5,7 @@ from threading import Thread
 from flask import Flask
 import asyncio
 
+# --- 1. DEO: Flask Web Server ---
 app = Flask('')
 
 @app.route('/')
@@ -18,6 +19,7 @@ def keep_alive():
     t = Thread(target=run)
     t.start()
 
+# --- 2. DEO: Dugme za brisanje kanala ---
 class CloseTicketView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
@@ -31,6 +33,7 @@ class CloseTicketView(discord.ui.View):
         except Exception as e:
             print(f"Greska pri brisanju kanala: {e}")
 
+# --- 3. DEO: Formular (Modal) ---
 class StaffApplicationModal(discord.ui.Modal, title="Prijava za Staff Tim"):
     
     pitanje1 = discord.ui.TextInput(label="1. Lični podaci", style=discord.TextStyle.short, required=True)
@@ -50,11 +53,14 @@ class StaffApplicationModal(discord.ui.Modal, title="Prijava za Staff Tim"):
 
         await interaction.response.send_message("Kreiram tvoju prijavu, sačekaj trenutak...", ephemeral=True)
 
+        # Pravljenje kanala u trenutnoj kategoriji da nasledi privatnost
         current_category = interaction.channel.category
         ticket_channel = await guild.create_text_channel(name=clean_name, category=current_category)
         
+        # Dozvole samo za tog igrača
         await ticket_channel.set_permissions(user, read_messages=True, send_messages=True, read_message_history=True)
 
+        # Slanje odgovora u kanal
         embed = discord.Embed(
             title=f"📝 Nova Prijava za Staffa — {user.name}",
             description=f"Korisnik {user.mention} je uspešno poslao prijavu.",
@@ -67,6 +73,7 @@ class StaffApplicationModal(discord.ui.Modal, title="Prijava za Staff Tim"):
         
         await ticket_channel.send(embed=embed, view=CloseTicketView())
 
+# --- 4. DEO: Panel sa zelenim dugmetom ---
 class TicketButton(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
@@ -75,6 +82,7 @@ class TicketButton(discord.ui.View):
     async def open_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_modal(StaffApplicationModal())
 
+# --- 5. DEO: Konfiguracija ---
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
