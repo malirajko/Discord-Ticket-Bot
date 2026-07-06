@@ -54,48 +54,60 @@ class StaffApplicationModal(discord.ui.Modal, title="Prijava za Staff Tim"):
         guild = interaction.guild
         user = interaction.user
         
+        # Provera duplih kanala
         existing_channel = discord.utils.get(guild.channels, name=f"prijava-{user.name.lower()}")
         if existing_channel:
             await interaction.response.send_message(f"Već imaš aktivnu prijavu ovde: {existing_channel.mention}", ephemeral=True)
             return
 
+        # Potvrda korisniku
         await interaction.response.send_message("Kreiram tvoju prijavu, sačekaj trenutak...", ephemeral=True)
 
-        # Dozvole: Korisnik vidi, ali ne može da piše dok admini ne odobre (da ne spama)
+        # Dozvole: Korisnik SADA MOŽE da piše u svom kanalu kad se otvori!
         overwrites = {
             guild.default_role: discord.PermissionOverwrite(read_messages=False),
-            user: discord.PermissionOverwrite(read_messages=True, send_messages=False),
-            guild.me: discord.PermissionOverwrite(read_messages=True, send_messages=True)
+            user: discord.PermissionOverwrite(read_messages=True, send_messages=True, attach_files=True),
+            guild.me: discord.PermissionOverwrite(read_messages=True, send_messages=True, embed_links=True)
         }
         
         admin_role = discord.utils.get(guild.roles, name="Administrator")
         if admin_role:
             overwrites[admin_role] = discord.PermissionOverwrite(read_messages=True, send_messages=True, attach_files=True)
 
+        # Pravljenje kanala
         ticket_channel = await guild.create_text_channel(name=f"prijava-{user.name}", overwrites=overwrites)
         
+        # Mala pauza od 1 sekunde da Discord prožvaće novi kanal pre slanja poruke
+        await asyncio.sleep(1)
+        
+        # Pravljenje lepe poruke sa odgovorima
         embed = discord.Embed(
             title=f"📝 Nova Prijava za Staffa — {user.name}",
-            description=f"Korisnik {user.mention} je popunio konkurs.",
+            description=f"Korisnik {user.mention} je uspešno poslao prijavu.\nOvdje možete popričati sa njim.",
             color=discord.Color.blue()
         )
-        embed.add_field(name="👤 Podaci:", value=self.pitanje1.value, inline=False)
-        embed.add_field(name="🛠️ Iskustvo:", value=self.pitanje2.value, inline=False)
-        embed.add_field(name="⏰ Aktivnost:", value=self.pitanje3.value, inline=False)
-        embed.add_field(name="❓ Zašto on:", value=self.pitanje4.value, inline=False)
+        embed.add_field(name="👤 1. Lični podaci:", value=self.pitanje1.value, inline=False)
+        embed.add_field(name="🛠️ 2. Prethodno iskustvo:", value=self.pitanje2.value, inline=False)
+        embed.add_field(name="⏰ 3. Dnevna aktivnost:", value=self.pitanje3.value, inline=False)
+        embed.add_field(name="❓ 4. Zašto baš on:", value=self.pitanje4.value, inline=False)
         
+        # Dugme za brisanje kanala
         close_view = discord.ui.View(timeout=None)
-        close_button = discord.ui.button(label="🔒 Zatvori i Obriši", style=discord.ButtonStyle.red, custom_id="close_ticket_btn")
+        close_button = discord.ui.Button(label="🔒 Zatvori i Obriši", style=discord.ButtonStyle.red, custom_id="close_ticket_btn")
         
         async def close_callback(close_interaction: discord.Interaction):
-            await close_interaction.response.send_message("Prijava se briše za 5 sekundi...")
+            await close_interaction.response.send_message("Ova prijava će biti obrisana za 5 sekundi...")
             await asyncio.sleep(5)
             await close_interaction.channel.delete()
             
         close_button.callback = close_callback
         close_view.add_item(close_button)
 
-        await ticket_channel.send(embed=embed, view=close_view)
+        # Slanje poruke u novi kanal
+        try:
+            await ticket_channel.send(embed=embed, view=close_view)
+        except Exception as e:
+            print(f"Greška pri slanju poruke u kanal: {e}")
 
 # --- 3. DEO: Panel dugme ---
 class TicketButton(discord.ui.View):
