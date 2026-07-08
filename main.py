@@ -102,3 +102,17 @@ async def on_command_error(ctx, error):
 keep_alive()
 token = os.environ.get("DISCORD_TOKEN")
 bot.run(token)
+
+@bot.command()
+async def help(ctx):
+    poruka = (
+        "<:arrow_join6:1516798345568456714> **__Next Level Ticket Help Bot__**\n\n"
+        "<:arrow_join6:1516798345568456714> Kako da se prijavis?\n"
+        "- __U kanalu: https://discord.com/channels/1404528302559068200/1523627320852873348 kliknite na plavo dugme/gumb__ **Otvori Konkurs** __nakon toga ce vam izaci formular koji morate da popunite nakon toga ce prijava biti poslata.__\n\n"
+        "<:arrow_join6:1516798345568456714> Sta treba da bi postali deo administracije?\n"
+        "- __Potrebno je osnovno znanje u SAMP modovima,kreshovima itd, aktivan facebook nalog,aktivnost na serveru,kulturnost,znanje da se resi odredjena situacija.__\n\n"
+        "<:arrow_join6:1516798345568456714> Privilegije nase administracije\n"
+        "- __Kao deo nase administracije na kraju svakog meseca clan koji se najbolje dokaze dobija neku placenu platformu kao sto su: Netflix,Spotify Premium,HBO,Disney ili nitro pretplata.__\n\n"
+        "<:arrow_join6:1516798345568456714> **UKOLIKO ZELIS DA POSTANES DEO ADMINSTRACIJE JAVI NAM SE PUTEM TIKETA !**"
+    )
+    await ctx.send(poruka)
