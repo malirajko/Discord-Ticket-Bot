@@ -73,4 +73,11 @@ class TicketButton(discord.ui.View):
         super().__init__(timeout=None)
 
     @discord.ui.button(label="Otvori Konkurs", style=discord.ButtonStyle.primary, custom_id="otvori_konkurs_dugme")
-    async def otvori_konkurs(self, interaction: discord.Interaction
+    async def otvori_konkurs(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_modal(StaffFormular())
+
+class TicketZatvoriView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label="Zatvori Tiket", style=discord
