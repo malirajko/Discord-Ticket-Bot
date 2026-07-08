@@ -3,9 +3,10 @@ from discord.ext import commands
 import os
 from flask import Flask
 from threading import Thread
+import datetime
 
 # ==========================================
-# 1. FLASK SERVER ZA KEEP-ALIVE (UptimeRobot)
+# 1. FLASK SERVER ZA KEEP-ALIVE
 # ==========================================
 app = Flask('')
 
@@ -27,7 +28,7 @@ intents = discord.Intents.default()
 intents.message_content = True
 
 bot = commands.Bot(command_prefix="ti!", intents=intents)
-bot.remove_command('help')  # Force gašenje fabričkog help-a
+bot.remove_command('help')  # Isključujemo fabrički help
 
 # ==========================================
 # 3. FORMULAR (MODAL) ZA STAFF PRIJAVU
@@ -80,4 +81,62 @@ class TicketZatvoriView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @discord.ui.button(label="Zatvori Tiket", style=discord
+    @discord.ui.button(label="Zatvori Tiket", style=discord.ButtonStyle.danger, custom_id="zatvori_tiket_dugme")
+    async def zatvori_tiket(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_message("Ovaj tiket će biti obrisan za 5 sekundi...")
+        await discord.utils.sleep_until(discord.utils.utcnow() + datetime.timedelta(seconds=5))
+        await interaction.channel.delete()
+
+# ==========================================
+# 5. DOGAĐAJI (EVENTS)
+# ==========================================
+@bot.event
+async def on_ready():
+    print(f'Ticket bot spreman!')
+    bot.add_view(TicketButton())
+    bot.add_view(TicketZatvoriView())
+
+@bot.event
+async def on_command_error(ctx, error):
+    if isinstance(error, commands.CommandNotFound):
+        return
+    raise error
+
+# ==========================================
+# 6. BOT KOMANDE
+# ==========================================
+@bot.command()
+@commands.has_permissions(administrator=True)
+async def setup(ctx):
+    embed = discord.Embed(
+        title="📋 Konkurs za Staff Tim",
+        description="Ukoliko želiš da postaneš deo našeg Staff tima, klikni na dugme ispod i odgovori na pitanja u formularu.",
+        color=discord.Color.purple()
+    )
+    await ctx.send(embed=embed, view=TicketButton())
+
+@bot.command(name="help")
+async def ticket_help(ctx):
+    opis_poruke = (
+        "<:arrow_join6:1516798345568456714> Kako da se prijavis?\n"
+        "- __U kanalu: https://discord.com/channels/1404528302559068200/1523627320852873348 kliknite na plavo dugme/gumb__ **Otvori Konkurs** __nakon toga ce vam izaci formular koji morate da popunite nakon toga ce prijava biti poslata.__\n\n"
+        "<:arrow_join6:1516798345568456714> Sta treba da bi postali deo administracije?\n"
+        "- __Potrebno je osnovno znanje u SAMP modovima,kreshovima itd, aktivan facebook nalog,aktivnost na serveru,kulturnost,znanje da se resi odredjena situacija.__\n\n"
+        "<:arrow_join6:1516798345568456714> Privilegije nase administracije\n"
+        "- __Kao deo nase administracije na kraju svakog meseca clan koji se najbolje dokaze dobija neku placenu platformu kao sto su: Netflix,Spotify Premium,HBO,Disney ili nitro pretplata.__\n\n"
+        "<:arrow_join6:1516798345568456714> **UKOLIKO ZELIS DA POSTANES DEO ADMINSTRACIJE JAVI NAM SE PUTEM TIKETA !**"
+    )
+    
+    embed = discord.Embed(
+        title="<:arrow_join6:1516798345568456714> **__Next Level Ticket Help Bot__**",
+        description=opis_poruke,
+        color=0x7ED321
+    )
+    await ctx.send(embed=embed)
+
+# ==========================================
+# 7. POKRETANJE BOTA
+# ==========================================
+keep_alive()
+token = os.environ.get("DISCORD_TOKEN")
+bot.run(token)
