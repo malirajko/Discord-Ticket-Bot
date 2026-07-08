@@ -116,3 +116,4 @@ async def help(ctx):
         "<:arrow_join6:1516798345568456714> **UKOLIKO ZELIS DA POSTANES DEO ADMINSTRACIJE JAVI NAM SE PUTEM TIKETA !**"
     )
     await ctx.send(poruka)
+bot.run(TOKEN)
