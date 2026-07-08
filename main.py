@@ -115,4 +115,4 @@ async def setup(ctx):
     embed = discord.Embed(
         title="📋 Konkurs za Staff Tim",
         description="Ukoliko želiš da postaneš deo našeg Staff tima, klikni na dugme ispod i odgovori na pitanja u formularu.",
-        color=discord.Color.purple()
+        color=discord.Color.green()
