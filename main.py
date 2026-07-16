@@ -12,7 +12,7 @@ app = Flask('')
 
 @app.route('/')
 def home():
-    return "Staff prijava bot je ziv!"
+    return "Ticket bot je ziv!"
 
 def run():
     app.run(host='0.0.0.0', port=10000)
@@ -22,13 +22,13 @@ def keep_alive():
     t.start()
 
 # ==========================================
-# 2. INICIJALIZACIJA BOTA I UKLJUČIVANJE INTENTS-A
+# 2. INICIJALIZACIJA TIKET BOTA
 # ==========================================
-intents = discord.Intents.all() # Promenjeno na all() da bi kreiranje kanala i permisije radile bez greške
+intents = discord.Intents.all()  # Zahteva sve intents kako bi bot mogao da kreira kanale
 intents.message_content = True
 
 bot = commands.Bot(command_prefix="ti!", intents=intents)
-bot.remove_command('help')  # Isključujemo fabrički help
+bot.remove_command('help')
 
 # ==========================================
 # 3. FORMULARI (MODALS) ZA TIKETE
@@ -53,7 +53,7 @@ class SupportFormular(discord.ui.Modal, title="Pomoć / Support"):
 
         ticket_channel = await guild.create_text_channel(name=f"support-{interaction.user.name}", overwrites=overwrites)
 
-        embed = discord.Embed(title=f"🔧 Novi Support Tiket - {interaction.user.display_name}", color=0x7ED321)
+        embed = discord.Embed(title=f"🔧 Novi Support Tiket - {interaction.user.display_name}", color=discord.Color.green())
         embed.add_field(name="Discord Korisnik", value=self.discord_username.value, inline=False)
         embed.add_field(name="Pitanje", value=self.pitanje.value, inline=False)
 
@@ -61,7 +61,7 @@ class SupportFormular(discord.ui.Modal, title="Pomoć / Support"):
         await interaction.followup.send(f"Vaš tiket za pomoć je uspešno otvoren! Pogledajte kanal: {ticket_channel.mention}", ephemeral=True)
 
 
-# --- FORMULAR 2: STAFF PRIJAVA (Tvoj originalni formular sa slike) ---
+# --- FORMULAR 2: STAFF PRIJAVA ---
 class StaffFormular(discord.ui.Modal, title="Prijava za Staff Tim"):
     ime = discord.ui.TextInput(label="Ime i Godište", placeholder="Npr. Marko, 18", min_length=2, max_length=50)
     discord_username = discord.ui.TextInput(label="Discord Username", placeholder="Npr. marko123", min_length=2, max_length=50)
@@ -83,7 +83,7 @@ class StaffFormular(discord.ui.Modal, title="Prijava za Staff Tim"):
 
         ticket_channel = await guild.create_text_channel(name=f"prijava-{interaction.user.name}", overwrites=overwrites)
 
-        embed = discord.Embed(title=f"👑 Nova Staff Prijava - {interaction.user.display_name}", color=0x7ED321)
+        embed = discord.Embed(title=f"👑 Nova Staff Prijava - {interaction.user.display_name}", color=discord.Color.green())
         embed.add_field(name="Ime i Godište", value=self.ime.value, inline=False)
         embed.add_field(name="Discord", value=self.discord_username.value, inline=False)
         embed.add_field(name="Facebook Profil", value=self.fb_link.value, inline=False)
@@ -97,7 +97,7 @@ class StaffFormular(discord.ui.Modal, title="Prijava za Staff Tim"):
 # --- FORMULAR 3: BUG REPORT ---
 class BugFormular(discord.ui.Modal, title="Bug Report"):
     discord_username = discord.ui.TextInput(label="Discord Username", placeholder="Npr. marko123", min_length=2, max_length=50)
-    vrsta_buga = discord.ui.TextInput(label="Kakvu vrstu bug-a ste pronašli?", placeholder="Opišite bug detaljno (gde se dešava, kako)...", style=discord.TextStyle.long, min_length=5)
+    vrsta_buga = discord.ui.TextInput(label="Kakvu vrstu bug-a ste pronašli?", placeholder="Opišite bug detaljno...", style=discord.TextStyle.long, min_length=5)
     dokaz = discord.ui.TextInput(label="Dokaz (slika/video)", placeholder="Npr. imgur.com/... ili youtube.com/...", min_length=5)
 
     async def on_submit(self, interaction: discord.Interaction):
@@ -114,7 +114,7 @@ class BugFormular(discord.ui.Modal, title="Bug Report"):
 
         ticket_channel = await guild.create_text_channel(name=f"bug-{interaction.user.name}", overwrites=overwrites)
 
-        embed = discord.Embed(title=f"🚫 Novi Bug Report - {interaction.user.display_name}", color=0x7ED321)
+        embed = discord.Embed(title=f"🚫 Novi Bug Report - {interaction.user.display_name}", color=discord.Color.green())
         embed.add_field(name="Discord Korisnik", value=self.discord_username.value, inline=False)
         embed.add_field(name="Opis Bug-a", value=self.vrsta_buga.value, inline=False)
         embed.add_field(name="Dokaz", value=self.dokaz.value, inline=False)
@@ -124,15 +124,14 @@ class BugFormular(discord.ui.Modal, title="Bug Report"):
 
 
 # ==========================================
-# 4. DUGMAD ZA OTVARANJE I ZATVARANJE TIKETA
+# 4. PANELI SA DUGMIĆIMA
 # ==========================================
 class TicketButton(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
     # 🔧 DUGME 1: POMOĆ / SUPPORT
-    @discord.ui.button(label="Pomoć / Support", style=di
-scord.ButtonStyle.secondary, custom_id="otvori_support_dugme", emoji="🔧")
+    @discord.ui.button(label="Pomoć / Support", style=discord.ButtonStyle.secondary, custom_id="otvori_support_dugme", emoji="🔧")
     async def otvori_support(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_modal(SupportFormular())
 
@@ -157,8 +156,9 @@ class TicketZatvoriView(discord.ui.View):
         await discord.utils.sleep_until(discord.utils.utcnow() + datetime.timedelta(seconds=5))
         await interaction.channel.delete()
 
+
 # ==========================================
-# 5. DOGAĐAJI (EVENTS) + CUSTOM STATUS
+# 5. ON_READY & SETUP KOMANDA
 # ==========================================
 @bot.event
 async def on_ready():
@@ -167,37 +167,26 @@ async def on_ready():
     bot.add_view(TicketZatvoriView())
     await bot.change_presence(activity=discord.CustomActivity(name="Za Pomoc: ti!help"))
 
-@bot.event
-async def on_command_error(ctx, error):
-    if isinstance(error, commands.CommandNotFound):
-        return
-    raise error
 
-# ==========================================
-# 6. BOT KOMANDE
-# ==========================================
-
-# ➡️ KOMANDA: ti!setup (Sada postavlja sva 3 dugmeta)
 @bot.command()
 @commands.has_permissions(administrator=True)
 async def setup(ctx):
     await ctx.message.delete()
-    
     embed = discord.Embed(
-        title="📩 NEXT LEVEL | PODRŠKA, KONKURSI I PRIJAVE",
+        title="📋 Next Level | Centar za Podršku i Prijave",
         description=(
-            "Dobrodošli u centar za podršku Next Level zajednice.\n"
             "Kliknite na odgovarajuće dugme ispod kako biste otvorili formular za vaš zahtev.\n\n"
-            "🔧 **Pomoć / Support** — Imate pitanje ili vam je potrebna pomoć oko nečega.\n"
+            "🔧 **Pomoć / Support** — Imate pitanje ili vam je potrebna pomoć.\n"
             "📋 **Otvori Konkurs** — Želite da se prijavite za naš Staff tim.\n"
-            "🚫 **Bug Report** — Pronašli ste grešku/bug na serveru ili u modovima."
+            "🚫 **Bug Report** — Pronašli ste grešku/bug na serveru."
         ),
-        color=0x7ED321 # Tvoja prepoznatljiva zelena boja
+        color=discord.Color.green()
     )
     await ctx.send(embed=embed, view=TicketButton())
 
+
 # ==========================================
-# 7. POKRETANJE BOTA
+# 6. POKRETANJE BOTA
 # ==========================================
 keep_alive()
 token = os.environ.get("DISCORD_TOKEN")
