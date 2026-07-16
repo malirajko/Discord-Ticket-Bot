@@ -28,7 +28,7 @@ intents = discord.Intents.all()  # Zahteva sve intents kako bi bot mogao da krei
 intents.message_content = True
 
 bot = commands.Bot(command_prefix="ti!", intents=intents)
-bot.remove_command('help')
+bot.remove_command('help')  # Sklanjamo stari help da ubacimo naš
 
 # ==========================================
 # 3. FORMULARI (MODALS) ZA TIKETE
@@ -158,7 +158,7 @@ class TicketZatvoriView(discord.ui.View):
 
 
 # ==========================================
-# 5. ON_READY & SETUP KOMANDA
+# 5. ON_READY & KOMANDE (SETUP, HELP)
 # ==========================================
 @bot.event
 async def on_ready():
@@ -168,6 +168,7 @@ async def on_ready():
     await bot.change_presence(activity=discord.CustomActivity(name="Za Pomoc: ti!help"))
 
 
+# ➡️ KOMANDA: ti!setup (Postavlja panel)
 @bot.command()
 @commands.has_permissions(administrator=True)
 async def setup(ctx):
@@ -183,6 +184,22 @@ async def setup(ctx):
         color=discord.Color.green()
     )
     await ctx.send(embed=embed, view=TicketButton())
+
+
+# ➡️ KOMANDA: ti!help (Sada radi!)
+@bot.command(name="help")
+async def ticket_help(ctx):
+    embed = discord.Embed(
+        title="🎫 Next Level | Podrška i Tiketi",
+        description=(
+            "Dobrodošli na naš sistem tiketa!\n\n"
+            "**Dostupne komande:**\n"
+            "• `ti!setup` - Postavlja panel sa dugmićima u kanal (samo za Administraciju).\n"
+            "• `ti!help` - Prikazuje ovu poruku sa informacijama."
+        ),
+        color=discord.Color.green()
+    )
+    await ctx.send(embed=embed)
 
 
 # ==========================================
